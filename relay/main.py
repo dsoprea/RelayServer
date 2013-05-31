@@ -319,7 +319,7 @@ def main():
     dport = args.dport
     cport = args.cport
 
-    startLogging(sys.stdout)
+    #startLogging(sys.stdout)
 
     relayFactory = _GeneralFactory("RelayServer")
     relayFactory.protocol = RelayServer

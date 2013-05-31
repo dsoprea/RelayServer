@@ -1,11 +1,10 @@
 #!/usr/bin/python
 
 from argparse import ArgumentParser
-from struct import unpack
 from sys import stdout
 
 from twisted.internet import reactor
-from twisted.internet.protocol import ReconnectingClientFactory, ClientFactory
+from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.python.log import startLogging
 from twisted.python import log
 
@@ -16,18 +15,11 @@ from relay.base_protocol import BaseProtocol
 from relay.endpoint import EndpointBaseProtocol
 from relay.read_buffer import ReadBuffer
 
+#from relay.real.real_server import RealServer as EndpointServer 
+from relay.real.hv_server import HvServer as EndpointServer 
+
 # TODO: Make sure the data going into RealServer goes in serially (so that we 
 #       can guarantee ordering). 
-
-
-class RealServer(object):
-    """This receives the actual proxied data."""
-    
-    def __init__(self, connection):
-        self.__connection = connection
-        
-    def receive_data(self, proxied_data):
-        log.msg("Real server received (%d) bytes." % (len(proxied_data)))
 
 
 class HostProcess(EndpointBaseProtocol):
@@ -40,16 +32,18 @@ class HostProcess(EndpointBaseProtocol):
 
         self.__configured = False
 
-        self.__session_id = None;
+        self.__session_no = None;
         self.__relay_host = None;
         self.__relay_port = None;
 
         self.__buffer_cleared = False
-        self.__real_server = RealServer(self)
+        self.__real_server = EndpointServer(self)
     
     def connectionLost(self, reason):
-        log.msg("Host-process with session-ID (%d) has had its connection "
-                "dropped." % (self.__session_id))
+        log.msg("Host-process with session-no (%d) has had its connection "
+                "dropped." % (self.__session_no))
+
+        self.__real_server.shutdown()
     
     def connectionMade(self):
         log.msg("We've successfully connected to the relay server. "
@@ -69,13 +63,13 @@ class HostProcess(EndpointBaseProtocol):
 
         response = self.parse_or_raise(message_raw, HostProcessHelloResponse)
 
-        self.__session_id = response.session_id;
+        self.__session_no = response.session_id;
         self.__relay_host = response.relay_host;
         self.__relay_port = int(response.relay_port);
 
-        log.msg("Received hello response: SESSION-ID=(%d) RHOST=[%s] "
+        log.msg("Received hello response: SESSION-NO=(%d) RHOST=[%s] "
                       "RPORT=(%d)" % 
-                      (self.__session_id, self.__relay_host, 
+                      (self.__session_no, self.__relay_host, 
                        self.__relay_port))
 
         self.__configured = True
@@ -93,6 +87,9 @@ class HostProcess(EndpointBaseProtocol):
         except Exception as e:
             log.err()
 
+    @property
+    def session_no(self):
+        return self.__session_no
 
 class CommandListener(BaseProtocol):
     """The relay server will emit messages to us over a separate command 
@@ -111,7 +108,7 @@ class CommandListener(BaseProtocol):
         
         assigned_session_id = properties.assigned_to_session 
         
-        log.msg("Received announcement of assignment to session-ID "
+        log.msg("Received announcement of assignment to session-no "
                       "(%d)." % (assigned_session_id))
         
     def __handle_dropped_connection(self, properties):
@@ -121,7 +118,7 @@ class CommandListener(BaseProtocol):
         session_id = properties.session_id
 
         log.msg("Received announcement of a connection drop for client "
-                      "with session-ID (%d)." % (session_id))
+                      "with session-no (%d)." % (session_id))
 
     def __handle_announcement(self, announcement):
         log.msg("Receiving an announcement with message-type of (%d)." % 
@@ -219,7 +216,7 @@ def main():
     dport = args.dport
     cport = args.cport
 
-    startLogging(stdout)
+    #startLogging(stdout)
 
     reactor.connectTCP(host, cport, CommandListenerClientFactory())
 

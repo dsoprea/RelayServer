@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 from sys import stdout
 
 from twisted.internet import reactor
-from twisted.internet.protocol import ReconnectingClientFactory, ClientFactory
+from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.python.log import startLogging
 from twisted.python import log
 
@@ -12,21 +12,11 @@ from relay.message_types.hello_pb2 import ClientHelloResponse
 from relay.message_types import build_msg_data_chello
 from relay.endpoint import EndpointBaseProtocol
 
+#from relay.real.real_client import RealClient as EndpointClient
+from relay.real.hv_client import HvClient as EndpointClient
+
 # TODO: Make sure the data going into RealClient goes in serially (so that we 
 #       can guarantee ordering). 
-
-
-class RealClient(object):
-    """This receives the actual proxied data."""
-    
-    def __init__(self, connection):
-        self.__connection = connection
-        
-    def receive_data(self, proxied_data):
-        log.msg("Real client received (%d) bytes." % (len(proxied_data)))
-
-    def ready(self):
-        log.msg("Real client has been sent the ready signal.")
 
 
 class Client(EndpointBaseProtocol):
@@ -39,7 +29,7 @@ class Client(EndpointBaseProtocol):
         
         self.__configured = False
         self.__buffer_cleared = False
-        self.__real_client = RealClient(self)
+        self.__real_client = EndpointClient(self)
     
     def connectionMade(self):
         log.msg("We've successfully connected to the relay server. "
@@ -51,6 +41,8 @@ class Client(EndpointBaseProtocol):
     def connectionLost(self, reason):
         log.msg("We have been disconnected from the relay-server. The host"
                 "process must've gone away.")
+
+        self.__real_client.shutdown()
 
     def __handle_configuration_data(self, data):
         """Our connection has not been configured yet."""
@@ -129,7 +121,7 @@ def main():
     host = args.host
     dport = args.dport
 
-    startLogging(stdout)
+    #startLogging(stdout)
 
     reactor.connectTCP(host, dport, ClientClientFactory())
     reactor.run()
