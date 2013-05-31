@@ -2,7 +2,6 @@
 
 from argparse import ArgumentParser
 from struct import unpack
-from threading import Lock
 from sys import stdout
 
 from twisted.internet import reactor
@@ -14,9 +13,11 @@ from relay.message_types.command_pb2 import Command
 from relay.message_types.hello_pb2 import HostProcessHelloResponse
 from relay.message_types import build_msg_data_hphello
 from relay.base_protocol import BaseProtocol
+from relay.endpoint import EndpointBaseProtocol
 from relay.read_buffer import ReadBuffer
 
-_num_connections = 1
+# TODO: Make sure the data going into RealServer goes in serially (so that we 
+#       can guarantee ordering). 
 
 
 class RealServer(object):
@@ -29,16 +30,15 @@ class RealServer(object):
         log.msg("Real server received (%d) bytes." % (len(proxied_data)))
 
 
-class HostProcess(BaseProtocol):
+class HostProcess(EndpointBaseProtocol):
     """This is a connection to the relay server. It knows how to configure 
     itself, and then forward all subsequent data to the "RealServer" instance.
     """
     
-    __locker = Lock()
-    
     def __init__(self):
+        EndpointBaseProtocol.__init__(self)
+
         self.__configured = False
-        self.__buffer = ""
 
         self.__session_id = None;
         self.__relay_host = None;
@@ -53,35 +53,12 @@ class HostProcess(BaseProtocol):
         hello = build_msg_data_hphello()
         self.write_message(hello)
 
-    def __get_message(self):
-        """We expect exactly one message within the entire session. Return None 
-        if not found.
-        """
-
-        with self.__class__.__locker:
-            length_length = 4
-            current_bytes = len(self.__buffer)
-            if current_bytes < length_length:
-                return None
-    
-            length_bytes = self.__buffer[0:length_length]
-            (length,) = unpack('>I', length_bytes)
-    
-            if current_bytes < (length_length + length):
-                return None
-                
-            message = self.__buffer[length_length:(length_length + length)]
-            self.__buffer = self.__buffer[(length_length + length):]
-
-        return message
-
     def __handle_configuration_data(self, data):
         """Our connection has not been configured yet."""
 
-        with self.__class__.__locker:
-            self.__buffer += data
+        self.push_data(data)
 
-        message_raw = self.__get_message()
+        message_raw = self.get_initial_message()
         if message_raw is None:
             return
 
@@ -103,11 +80,7 @@ class HostProcess(BaseProtocol):
             if self.__configured is False:
                 self.__handle_configuration_data(data)
             else:
-                with self.__class__.__locker:
-                    if self.__buffer:
-                        data = self.__buffer + data
-                        self.__buffer = ""
-                    
+                data = self.get_and_clear_buffer() + data
                 self.__real_server.receive_data(data)
         except Exception as e:
             log.err()
@@ -199,11 +172,17 @@ class CommandListenerClientFactory(ReconnectingClientFactory):
         return CommandListener()
 
 def main():
-    parser = ArgumentParser(description='Start a protocol-agnostic relay '
-                                        'server.')
+    parser = ArgumentParser(description="Start the host process and establish "
+                                        "N connections to the relay server.")
 
     parser.add_argument('host', nargs='?', default='localhost')
     
+    parser.add_argument('-n', '--num-connections', 
+                        nargs='?', 
+                        default=10, 
+                        type=int, 
+                        help="Number of connections to maintain.")
+
     parser.add_argument('dport', 
                         nargs='?', 
                         default=8000, 
@@ -221,6 +200,7 @@ def main():
     args = parser.parse_args()
 
     host = args.host
+    num_connections = args.num_connections
     dport = args.dport
     cport = args.cport
 
@@ -232,7 +212,7 @@ def main():
     # "reconnecting" factories, they will all try to reconnect when their
     # connections are dropped after each client has finished-up (or for any 
     # other reason).
-    i = _num_connections
+    i = num_connections
     while i > 0:
         reactor.connectTCP(host, dport, HostProcessClientFactory())
         i -= 1
