@@ -8,8 +8,8 @@ from twisted.internet.protocol import ReconnectingClientFactory, ClientFactory
 from twisted.python.log import startLogging
 from twisted.python import log
 
-from relay.message_types.hello_pb2 import HostProcessHelloResponse
-from relay.message_types import build_msg_data_hphello
+from relay.message_types.hello_pb2 import ClientHelloResponse
+from relay.message_types import build_msg_data_chello
 from relay.endpoint import EndpointBaseProtocol
 
 # TODO: Make sure the data going into RealClient goes in serially (so that we 
@@ -38,14 +38,19 @@ class Client(EndpointBaseProtocol):
         EndpointBaseProtocol.__init__(self)
         
         self.__configured = False
-        self.__real_server = RealClient(self)
+        self.__buffer_cleared = False
+        self.__real_client = RealClient(self)
     
     def connectionMade(self):
         log.msg("We've successfully connected to the relay server. "
                       "Sending hello.")
                 
-        hello = build_msg_data_hphello()
+        hello = build_msg_data_chello()
         self.write_message(hello)
+
+    def connectionLost(self, reason):
+        log.msg("We have been disconnected from the relay-server. The host"
+                "process must've gone away.")
 
     def __handle_configuration_data(self, data):
         """Our connection has not been configured yet."""
@@ -56,31 +61,36 @@ class Client(EndpointBaseProtocol):
         if message_raw is None:
             return
 
-        response = self.parse_or_raise(message_raw, HostProcessHelloResponse)
+        response = self.parse_or_raise(message_raw, ClientHelloResponse)
 
-        self.__session_id = response.session_id;
-        self.__relay_host = response.relay_host;
-        self.__relay_port = int(response.relay_port);
+        # A host-process wasn't available to service us.
+        if response.assigned is False:
+            log.msg("A host-process isn't available to service us.")
+            self.transport.loseConnection()
+            return
 
-        log.msg("Received hello response: SESSION-ID=(%d) RHOST=[%s] "
-                      "RPORT=(%d)" % 
-                      (self.__session_id, self.__relay_host, 
-                       self.__relay_port))
+        log.msg("We have connected and have been assigned to a host-process. "
+                "Ready to proceed with regular data.")
 
         self.__configured = True
+    
+        self.__real_client.ready()
     
     def dataReceived(self, data):
         try:
             if self.__configured is False:
                 self.__handle_configuration_data(data)
             else:
-                data = self.get_and_clear_buffer() + data
-                self.__real_server.receive_data(data)
+                if self.__buffer_cleared is False:
+                    data = self.get_and_clear_buffer() + data
+                    self.__buffer_cleared = True
+                    
+                self.__real_client.receive_data(data)
         except Exception as e:
             log.err()
 
 
-class ClientClientFactory(ClientFactory):
+class ClientClientFactory(ReconnectingClientFactory):
     """This class manages instance-creation for the outgoing client connection. 
     It will reconnect if a connection is broken or times-out while 
     trying to connect.
@@ -98,10 +108,14 @@ class ClientClientFactory(ClientFactory):
 
 
 def main():
-    parser = ArgumentParser(description='Start a protocol-agnostic relay '
-                                        'server.')
+    parser = ArgumentParser(description="Connect a client application to a "
+                                        "host-process by way of the relay " 
+                                        "server.")
 
-    parser.add_argument('host', nargs='?', default='localhost')
+    parser.add_argument('host', 
+                        nargs='?', 
+                        default='localhost', 
+                        help="The hostname/IP of the relay-server.")
     
     parser.add_argument('dport', 
                         nargs='?', 

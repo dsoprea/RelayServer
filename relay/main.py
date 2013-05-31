@@ -92,6 +92,8 @@ class RelayServer(BaseProtocol):
                         "dropped." % (self.session_no))
 
                 del cls.__hp_waiting_list[self.session_no]
+                
+                aa = 5
             elif self.session_no in cls.__map_client_to_hp:
                 # A client connection dropped. This connection will only exist 
                 # under assignment.
@@ -118,7 +120,7 @@ class RelayServer(BaseProtocol):
                 # is currently assigned, the result is undefined. We do our 
                 # honest and simplest best, here, though.
 
-                mapped_client = cls.__map_hp_to_client[self]
+                mapped_client = cls.__map_hp_to_client[self.session_no]
 
                 log.msg("Host-process with session-ID (%d) mapped to client "
                         "with session-ID (%d) has dropped." % 
@@ -170,7 +172,10 @@ class RelayServer(BaseProtocol):
                     return
 
                 # Dequeue an unassigned HP connection.
-                hp_connection = cls.__hp_waiting_list.iter_values()[0]
+                for available_hp_connection in cls.__hp_waiting_list.itervalues():
+                    hp_connection = available_hp_connection
+                    break
+                
                 del cls.__hp_waiting_list[hp_connection.session_no]
 
                 # Assign the HP connection.
@@ -184,7 +189,7 @@ class RelayServer(BaseProtocol):
                 # Store the client connection.
                 cls.__client_list[self.session_no] = self
 
-                log.msg("Client with session-ID has been assigned to host-"
+                log.msg("Client with session-ID (%d) has been assigned to host-"
                         "process with session-ID (%d)." % 
                         (self.session_no, hp_connection.session_no))
 
@@ -234,7 +239,7 @@ class RelayServer(BaseProtocol):
     @property
     def session_no(self):
         return self.transport.sessionno
-
+    
 
 class CommandServer(BaseProtocol):
     """Handles operations for host-process command-channel."""

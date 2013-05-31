@@ -44,7 +44,12 @@ class HostProcess(EndpointBaseProtocol):
         self.__relay_host = None;
         self.__relay_port = None;
 
+        self.__buffer_cleared = False
         self.__real_server = RealServer(self)
+    
+    def connectionLost(self, reason):
+        log.msg("Host-process with session-ID (%d) has had its connection "
+                "dropped." % (self.__session_id))
     
     def connectionMade(self):
         log.msg("We've successfully connected to the relay server. "
@@ -80,7 +85,10 @@ class HostProcess(EndpointBaseProtocol):
             if self.__configured is False:
                 self.__handle_configuration_data(data)
             else:
-                data = self.get_and_clear_buffer() + data
+                if self.__buffer_cleared is False:
+                    data = self.get_and_clear_buffer() + data
+                    self.__buffer_cleared = True
+
                 self.__real_server.receive_data(data)
         except Exception as e:
             log.err()
@@ -101,10 +109,10 @@ class CommandListener(BaseProtocol):
     def __handle_new_connection(self, properties):
         """We're about to receive data from a new client."""
         
-        self.__assigned_session_id = properties.assigned_to_session 
+        assigned_session_id = properties.assigned_to_session 
         
         log.msg("Received announcement of assignment to session-ID "
-                      "(%d)." % (self.__assigned_session_id))
+                      "(%d)." % (assigned_session_id))
         
     def __handle_dropped_connection(self, properties):
         """The client assigned to us has dropped their connection. Ours will be
@@ -121,10 +129,12 @@ class CommandListener(BaseProtocol):
         
         if announcement.message_type == Command.CONNECTION_OPEN:
             self.__handle_new_connection(announcement.open_properties)
-        elif announcement.message_type == Command.CONNECTION_CLOSE:
+        elif announcement.message_type == Command.CONNECTION_DROP:
             self.__handle_dropped_connection(announcement.drop_properties)
 
     def dataReceived(self, data):
+        log.msg("(%d) bytes of data received on command-channel." % (len(data)))
+        
         try:
             self.__buffer.push(data)
 
@@ -132,13 +142,15 @@ class CommandListener(BaseProtocol):
             if message_raw is None:
                 return
 
+            log.msg("Message extracted from command-channel.")
+
             announcement = self.parse_or_raise(message_raw, Command)
             self.__handle_announcement(announcement)            
         except:
             log.err()
 
 
-class HostProcessClientFactory(ClientFactory):
+class HostProcessClientFactory(ReconnectingClientFactory):
     """This class manages instance-creation for the outgoing host-process 
     connections. It will reconnect if a connection is broken or times-out while 
     trying to connect.
@@ -175,7 +187,10 @@ def main():
     parser = ArgumentParser(description="Start the host process and establish "
                                         "N connections to the relay server.")
 
-    parser.add_argument('host', nargs='?', default='localhost')
+    parser.add_argument('host', 
+                        nargs='?', 
+                        default='localhost', 
+                        help="The hostname/IP of the relay-server.")
     
     parser.add_argument('-n', '--num-connections', 
                         nargs='?', 

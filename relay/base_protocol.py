@@ -1,19 +1,30 @@
 from struct import pack
 from google.protobuf.message import DecodeError
 from twisted.internet.protocol import Protocol
+from twisted.python import log
 
+from relay.utility import get_hex_dump
 
 class BaseProtocol(Protocol):
     def write_message(self, message):
         data = message.SerializeToString()
-        prefix = pack('>I', len(data))
+        message_len = len(data)
+        prefix = pack('>I', message_len)
+        
+        total_len = len(prefix) + message_len
     
+        log.msg("Message type [%s] serialized into (%d) bytes and wrapped as "
+                "(%d) bytes." % 
+                (message.__class__.__name__, message_len, total_len))
+
         self.transport.write(prefix)
         self.transport.write(data)
 
     def parse_or_raise(self, message_raw, type_):
+        log.msg("Parsing [%s] in (%d) bytes." % (type_.__name__, len(message_raw)))
+
         message = type_()
-        
+
         try:
             message.ParseFromString(message_raw)
         except DecodeError:
@@ -24,3 +35,4 @@ class BaseProtocol(Protocol):
                                 "uninitialized message." % (type_))
 
         return message
+

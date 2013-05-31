@@ -19,7 +19,7 @@ class ReadBuffer(object):
         self.__length = 0
         self.__read_buffer_index = 0
         self.__hits = 0
-    
+
     def push(self, data):
         with self.__class__.__locker:
             self.__buffers.append(data)
@@ -51,8 +51,8 @@ class ReadBuffer(object):
 
             for updates in (updates1, updates2):
                 for update in updates:
-                    (buffer_index, buffer, length_consumed) = update
-                    self.__buffers[buffer_index] = buffer
+                    (buffer_index, buffer_, length_consumed) = update
+                    self.__buffers[buffer_index] = buffer_ if buffer_ else ''
                     self.__length -= length_consumed
 
             self.__read_buffer_index = last_buffer_index
@@ -86,7 +86,7 @@ class ReadBuffer(object):
             while need_bytes > 0:
                 len_current_buffer = len(self.__buffers[i])
                 
-                if need_bytes > len_current_buffer:
+                if need_bytes >= len_current_buffer:
                     # We need at least as many bytes as are in the current 
                     # buffer. Consume them all.
                 
@@ -100,8 +100,9 @@ class ReadBuffer(object):
                 
                     first_half = self.__buffers[i][:need_bytes]
                     second_half = self.__buffers[i][need_bytes:]
-                    
-                    self.__buffers[i:i] = [first_half, second_half]
+
+                    self.__buffers[i] = first_half
+                    self.__buffers.insert(i + 1, second_half)
                     
                     # We only mark the buffer that came from the first half as
                     # having an update (the second half of the buffer wasn't 
@@ -120,7 +121,7 @@ class ReadBuffer(object):
         """Clip buffers that the top of our list that have been completely 
         exhausted.
         """
-    
+# TODO: Test this.    
         with self.__class__.__locker:
 
             while self.__read_buffer_index > 0:

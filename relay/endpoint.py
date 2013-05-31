@@ -11,10 +11,18 @@ class EndpointBaseProtocol(BaseProtocol):
         self.__buffer = ""
     
     def push_data(self, data):
+        """Data has been received while we are still in an unconfigured state. 
+        Push all data until we can see a complete message.
+        """
+        
         with self.__class__.__locker:
             self.__buffer += data
     
     def get_and_clear_buffer(self):
+        """This is called every time we receive data, but it's only really of 
+        use immediately following being configured, just in case we pushed any 
+        data that came in right behind the initial message."""
+        
         with self.__class__.__locker:
             buffer_ = self.__buffer
             self.__buffer = ""

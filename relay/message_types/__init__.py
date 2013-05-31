@@ -41,3 +41,10 @@ def build_msg_data_hphello():
     hello.peer_type = Hello.HOST_PROCESS
 
     return hello
+
+def build_msg_data_chello():
+    hello = Hello()
+    hello.version = 1
+    hello.peer_type = Hello.CLIENT
+
+    return hello
