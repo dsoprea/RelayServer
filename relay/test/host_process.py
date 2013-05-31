@@ -1,25 +1,22 @@
 #!/usr/bin/python
-import sys
 
-from sys import stdout
 from argparse import ArgumentParser
 from struct import unpack
 from threading import Lock
-from google.protobuf.message import DecodeError
+from sys import stdout
 
 from twisted.internet import reactor
-from twisted.internet.protocol import Factory, Protocol, \
-    ReconnectingClientFactory
+from twisted.internet.protocol import ReconnectingClientFactory, ClientFactory
 from twisted.python.log import startLogging
-from twisted.internet import reactor
-from twisted.internet.protocol import Protocol, ClientFactory
 from twisted.python import log
 
-from message_types.command_pb2 import Command
-from message_types.hello_pb2 import Hello, HostProcessHelloResponse
-from message_types import build_msg_data_hphello
-from base_protocol import BaseProtocol
-from read_buffer import ReadBuffer
+from relay.message_types.command_pb2 import Command
+from relay.message_types.hello_pb2 import HostProcessHelloResponse
+from relay.message_types import build_msg_data_hphello
+from relay.base_protocol import BaseProtocol
+from relay.read_buffer import ReadBuffer
+
+_num_connections = 1
 
 
 class RealServer(object):
@@ -181,7 +178,7 @@ class HostProcessClientFactory(ClientFactory):
         log.msg("Started to connect.")
 
     def buildProtocol(self, addr):
-        log.msg("Connected.")
+        log.msg("Connected host-process.")
         return HostProcess()
 
 
@@ -198,7 +195,7 @@ class CommandListenerClientFactory(ReconnectingClientFactory):
         log.msg("Started to connect.")
 
     def buildProtocol(self, addr):
-        log.msg("Connected.")
+        log.msg("Connected command-listener.")
         return CommandListener()
 
 def main():
@@ -227,10 +224,19 @@ def main():
     dport = args.dport
     cport = args.cport
 
-    startLogging(sys.stdout)
+    startLogging(stdout)
 
-    reactor.connectTCP(host, dport, HostProcessClientFactory())
     reactor.connectTCP(host, cport, CommandListenerClientFactory())
+
+    # Spawn a series of connections to wait for incoming requests. As these are
+    # "reconnecting" factories, they will all try to reconnect when their
+    # connections are dropped after each client has finished-up (or for any 
+    # other reason).
+    i = _num_connections
+    while i > 0:
+        reactor.connectTCP(host, dport, HostProcessClientFactory())
+        i -= 1
+
     reactor.run()
 
 if __name__ == '__main__':

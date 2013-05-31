@@ -1,6 +1,7 @@
 from threading import RLock
 from struct import unpack
 
+
 class ReadBuffer(object):
     """This class receives incoming data, and stores it in a list of extents 
     (also referred to as buffers). It allows us to leisurely pop off sequences 

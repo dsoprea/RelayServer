@@ -1,10 +1,9 @@
 from struct import pack
 from google.protobuf.message import DecodeError
+from twisted.internet.protocol import Protocol
 
-from twisted.internet import protocol
-from twisted.python import log
 
-class BaseProtocol(protocol.Protocol):
+class BaseProtocol(Protocol):
     def write_message(self, message):
         data = message.SerializeToString()
         prefix = pack('>I', len(data))
