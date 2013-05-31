@@ -1,0 +1,56 @@
+package relay;
+
+message ClientHelloProperties {
+    // Client-related information packaged within the hello message.
+    // Ignored if the hello doesn't come from a client.
+
+}
+
+message HostProcessHelloProperties {
+    // Host-process-related information packaged within the hello message. 
+    // Ignored if the hello doesn't come from a host process.
+
+}
+
+message Hello {
+    // This is the first communication expected after a connection is made from 
+    // a client or host process, and this is the only communication sent on a 
+    // data channel that is relay-related (everything else is transferred to
+    // a connection of the opposite role).
+
+    required int32 version = 1;
+
+    enum PeerType {
+        CLIENT = 0;
+        HOST_PROCESS = 1;
+    }
+    
+    required PeerType peer_type = 2;
+    optional ClientHelloProperties client_properties = 3;
+    optional HostProcessHelloProperties hostprocess_properties = 4;
+}
+
+message ClientHelloResponse {
+    // A response to a client hello message. 'assigned' will be FALSE if a 
+    // host-process instance is not available to service the connection. The
+    // connection will be subsequently dropped.
+
+    required bool assigned = 1;
+}
+
+message HostProcessHelloResponse {
+    // A response to a host-process hello message. The session_id will be used
+    // in a command-channel message to announce the assignment of a specific 
+    // waiting [and unallocated] host-process connection to some new client 
+    // connection that will imminently begin transmitting.
+
+    required int32 session_id = 1;
+
+    // Dictated by the spec. Given that we need the [well-defined] hostname and 
+    // port to even initiate the connection in order to get this response, it 
+    // seems silly. Since I haven't received the requested clarification, I'm 
+    // still including it.
+    required string relay_host = 2;
+    required string relay_port = 3;
+}
+

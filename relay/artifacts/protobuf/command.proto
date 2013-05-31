@@ -1,0 +1,33 @@
+package relay;
+
+message ClientConnectionOpenProperties {
+    // Information regarding a new client packaged within a command message.
+
+    required int32 assigned_to_session = 1;
+}
+
+message ClientConnectionDropProperties {
+    // Information regarding a dropped client packaged within a command 
+    // message. This information can be regarded as purely advisory, as the 
+    // connection to the host-process assigned to the indicated session-id will
+    // be imminently dropped.
+
+    required int32 session_id = 1;
+}
+
+message Command {
+    // A message announced on the command-channel (which is attended by a 
+    // single connection from the host-process).
+
+    required int32 version = 1;
+
+    enum MessageType {
+        CONNECTION_OPEN = 0;
+        CONNECTION_DROP = 1;
+    }
+    
+    required MessageType message_type = 2;
+    optional ClientConnectionOpenProperties open_properties = 3;
+    optional ClientConnectionDropProperties drop_properties = 4;
+}
+
