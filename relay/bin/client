@@ -1,4 +1,4 @@
 #!/bin/sh
 
-PYTHONPATH=../.. ../test/client.py
+PYTHONPATH=../.. ../test/client.py $@
 
