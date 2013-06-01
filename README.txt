@@ -16,28 +16,27 @@ and your process will begin being sent data received from the client and the
 client will be sent data received from the HP. 
 
 
-How to Run With Packaged Client/Server Examples
-===============================================
+How to Run With Packaged Server Example
+=======================================
 
 Use the scripts in bin/. For information on parameters, run from bin/:
 
     ./relay -h
-    ./client -h
     ./server -h
 
-Using defaults, you can execute "./relay", "./client", and "./server" in any
-order, and when all three are able to handshake, you'll be in business.
+Using defaults, you can just execute "./relay" and "./server" in any order, and 
+when they finally connect to each other, you'll be in business. Once these are
+established, you can use something like "telnet" to test. The default port for
+the client connections is (8002).
 
 (This is an excellent opportunity to use Terminator 
 (http://www.tenshu.net/p/terminator.html))
 
 NOTE: Although, technically, you can run the components in any order, the 
-      client and server will backoff further and further, for each failed 
-      connection. If you don't want to wait for them to reattempt, run the
-      relay, first. 
+      server will backoff further and further, for each failed connection. If 
+      you don't want to wait for it to reattempt, run the relay, first. 
 
-The default client and server are configured as the EchoClient and EchoServer
-example implementations.
+The default server is configured as the EchoServer example implementation.
 
 See the configuration section below for more information.
 
@@ -56,72 +55,43 @@ artifacts
   Miscellaneous resources, such as the Protocol Buffer declaratives.
   
 bin
-  Utility scripts to launch the relay server and the currently-configured 
-  client and server.
-
-endpoints
-  The main client and server communication adapters. These manage the 
-  connections to the relay server, and forward the actual proxied data to the
-  "real" client and servers (see below).
+  Utility scripts to launch the relay and the currently-configured server.
 
 message_types
   The compiled Protocol Buffer definitions.
 
 real
-  The example client/servers, along with the standard interfaces for -any-
-  client and server.
+  The example servers, along with the standard interface for servers.
 
 
 Examples
 ========
 
-There are two example client/server reference implementations packages with
-this project:
-
-echo_client, echo_server: 
-
-  Similar to a ping, the client will regularly send messages to the server, and
-  the server will return them.
-
-hv_client, hv_server:
-
-  The client will manufacture larger messages that will be processed by the
-  server. When the server sees the end of the message, it will return it. When 
-  the client sees the end of the response, it will send a new message. It does 
-  this until it's reached a certain quantity, then it closes its connection, 
-  which causes the server's connection to be closed, and then new connections 
-  are automatically established. The process then repeats.
-
-  In the beginning, the size of the message and the quantity to be sent was
-  random. Currently, they are set to constant amounts (the randrange() calls 
-  are commented) so that we could gauge the performance of the operating 
-  environment. Since we see this as being of more use to everyone, in general, 
-  we have left it this way.
+There is an "echo" server reference implementations packaged with this project.
     
 
 Configuration
 =============
 
-The only configuration exists within the parameters of the three utility 
+The only configuration exists within the parameters of the two utility 
 scripts, and the config.py script.
 
-By default, the client and server target a relay-server listening for data at 
-tcp://localhost:8000 with a command-channel at tcp://localhost:8001. For 
-different host/ports, execute any of the following from the bin/ directory to 
-see help for parameters:
+By default, the relay-server listens on the following ports:
+
+tcp://localhost:8000    Server sends data here (server data).
+tcp://localhost:8001    Relay announces connection changes here (server 
+                        command-channel).
+tcp://localhost:8002    Any client can connect here (client data).
+
+For different host/ports, execute the following from the bin/ directory to see 
+the help for parameters:
   
     ./relay -h
-    ./client -h
     ./server -h
 
-The config.py script simply must import the classes that will be used as the 
-client and server:
-
-  The server class must be imported/aliased as "EndpointServer" and implement
-  the relayserver.real.ireal_server.IRealServer interface.
-
-  The client class must be imported/aliased as "EndpointClient" and implement
-  the relayserver.real.ireal_client.IRealClient interface.
+The config.py script simply must import the class that will be used as the 
+server. It must be imported/aliased as "EndpointServer" and implement the 
+relayserver.real.ireal_server.IRealServer interface.
 
 
 Further Details
@@ -135,7 +105,6 @@ time.
 
 Connections are managed automatically. By default, (10) connections are created
 from the server to wait for requests, and dropped connections from both the
-server -and- the client are always replenished/reconnected. You need only 
-implement a client and server for your purposes, and we'll take care of all 
-connectivity.
+server are always replenished/reconnected. You need only implement a server for 
+your purposes, and we'll take care of the connectivity.
  

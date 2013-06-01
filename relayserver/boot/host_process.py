@@ -29,7 +29,7 @@ class HostProcess(EndpointBaseProtocol):
         self.__factory = factory
         self.__configured = False
 
-        self.__session_no = None;
+        self.__session_id = None;
         self.__relay_host = None;
         self.__relay_port = None;
 
@@ -38,7 +38,7 @@ class HostProcess(EndpointBaseProtocol):
     
     def connectionLost(self, reason):
         log.msg("Host-process with session-no (%d) has had its connection "
-                "dropped." % (self.__session_no))
+                "dropped." % (self.__session_id))
 
         self.__real_server.shutdown()
     
@@ -60,13 +60,13 @@ class HostProcess(EndpointBaseProtocol):
 
         response = self.parse_or_raise(message_raw, HostProcessHelloResponse)
 
-        self.__session_no = response.session_id;
+        self.__session_id = response.session_id;
         self.__relay_host = response.relay_host;
         self.__relay_port = int(response.relay_port);
 
         log.msg("Received hello response: SESSION-NO=(%d) RHOST=[%s] "
                       "RPORT=(%d)" % 
-                      (self.__session_no, self.__relay_host, 
+                      (self.__session_id, self.__relay_host, 
                        self.__relay_port))
 
         self.__configured = True
@@ -86,8 +86,8 @@ class HostProcess(EndpointBaseProtocol):
             log.err()
 
     @property
-    def session_no(self):
-        return self.__session_no
+    def session_id(self):
+        return self.__session_id
 
 class CommandListener(BaseProtocol):
     """The relay server will emit messages to us over a separate command 
@@ -202,8 +202,7 @@ def main():
                         nargs='?', 
                         default=8000, 
                         type=int, 
-                        help="Port for client and host-process data-channel "
-                             "connections.")
+                        help="Port for host-process data-channel connections.")
 
     parser.add_argument('cport', 
                         nargs='?', 

@@ -1,17 +1,5 @@
 package relay;
 
-message ClientHelloProperties {
-    // Client-related information packaged within the hello message.
-    // Ignored if the hello doesn't come from a client.
-
-}
-
-message HostProcessHelloProperties {
-    // Host-process-related information packaged within the hello message. 
-    // Ignored if the hello doesn't come from a host process.
-
-}
-
 message Hello {
     // This is the first communication expected after a connection is made from 
     // a client or host process, and this is the only communication sent on a 
@@ -19,23 +7,6 @@ message Hello {
     // a connection of the opposite role).
 
     required int32 version = 1;
-
-    enum PeerType {
-        CLIENT = 0;
-        HOST_PROCESS = 1;
-    }
-    
-    required PeerType peer_type = 2;
-    optional ClientHelloProperties client_properties = 3;
-    optional HostProcessHelloProperties hostprocess_properties = 4;
-}
-
-message ClientHelloResponse {
-    // A response to a client hello message. 'assigned' will be FALSE if a 
-    // host-process instance is not available to service the connection. The
-    // connection will be subsequently dropped.
-
-    required bool assigned = 1;
 }
 
 message HostProcessHelloResponse {
@@ -53,4 +24,3 @@ message HostProcessHelloResponse {
     required string relay_host = 2;
     required string relay_port = 3;
 }
-

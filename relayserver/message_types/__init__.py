@@ -1,6 +1,5 @@
 from relayserver.message_types.command_pb2 import Command
-from relayserver.message_types.hello_pb2 import HostProcessHelloResponse, \
-                                    ClientHelloResponse, Hello
+from relayserver.message_types.hello_pb2 import HostProcessHelloResponse, Hello
 
 def build_msg_cmd_connopen(assigned_hp_session):
         
@@ -29,22 +28,8 @@ def build_msg_data_hphelloresponse(session_id, relay_host, relay_port):
 
     return response
 
-def build_msg_data_chelloresponse(was_assigned): 
-    response = ClientHelloResponse()
-    response.assigned = was_assigned
-
-    return response
-
 def build_msg_data_hphello():
     hello = Hello()
     hello.version = 1
-    hello.peer_type = Hello.HOST_PROCESS
-
-    return hello
-
-def build_msg_data_chello():
-    hello = Hello()
-    hello.version = 1
-    hello.peer_type = Hello.CLIENT
 
     return hello

@@ -1,4 +1,4 @@
 #!/bin/sh
 
-PYTHONPATH=../.. python ../main.py $@
+PYTHONPATH=../.. python ../boot/relay.py $@
 
