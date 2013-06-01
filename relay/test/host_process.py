@@ -15,11 +15,7 @@ from relay.base_protocol import BaseProtocol
 from relay.endpoint import EndpointBaseProtocol
 from relay.read_buffer import ReadBuffer
 
-#from relay.real.real_server import RealServer as EndpointServer 
-from relay.real.hv_server import HvServer as EndpointServer 
-
-# TODO: Make sure the data going into RealServer goes in serially (so that we 
-#       can guarantee ordering). 
+from relay.config import EndpointServer
 
 
 class HostProcess(EndpointBaseProtocol):
@@ -27,9 +23,10 @@ class HostProcess(EndpointBaseProtocol):
     itself, and then forward all subsequent data to the "RealServer" instance.
     """
     
-    def __init__(self):
+    def __init__(self, factory):
         EndpointBaseProtocol.__init__(self)
 
+        self.__factory = factory
         self.__configured = False
 
         self.__session_no = None;
@@ -73,6 +70,7 @@ class HostProcess(EndpointBaseProtocol):
                        self.__relay_port))
 
         self.__configured = True
+        self.__factory.resetDelay()
     
     def dataReceived(self, data):
         try:
@@ -161,7 +159,7 @@ class HostProcessClientFactory(ReconnectingClientFactory):
 
     def buildProtocol(self, addr):
         log.msg("Connected host-process.")
-        return HostProcess()
+        return HostProcess(self)
 
 
 class CommandListenerClientFactory(ReconnectingClientFactory):
@@ -178,6 +176,11 @@ class CommandListenerClientFactory(ReconnectingClientFactory):
 
     def buildProtocol(self, addr):
         log.msg("Connected command-listener.")
+        
+        # We don't have any obligatory communication that happens at the top of
+        # a command connection. Just mark it as successful, immediately.
+        self.resetDelay()
+
         return CommandListener()
 
 def main():

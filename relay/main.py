@@ -18,6 +18,9 @@ from relay.message_types import build_msg_cmd_connopen, build_msg_cmd_conndrop,\
                                 build_msg_data_chelloresponse
 from relay.base_protocol import BaseProtocol
 
+# TODO: As Twisted mostly runs synchronously, see if there's someway we can 
+#       spin-off write requests so that control can return to the reactor. 
+
 
 class RelayServer(BaseProtocol):
     """Handles operations for client/host-process data channel."""
@@ -113,8 +116,7 @@ class RelayServer(BaseProtocol):
                 if command_channel is not None:
                     command_channel.announce_drop(mapped_hp.session_no)
 
-# TODO: Wait a few seconds, and -then- drop the connection.
-                mapped_hp.transport.loseConnection()
+                reactor.callLater(5, mapped_hp.transport.loseConnection)
             elif self.session_no in cls.__map_hp_to_client:
                 # An HP connection dropped. We've stated elsewhere that if this
                 # is currently assigned, the result is undefined. We do our 
@@ -155,7 +157,8 @@ class RelayServer(BaseProtocol):
                 
                 response = build_msg_data_chelloresponse(False)
                 self.write_message(response)
-# TODO: Wait for a few seconds and drop the connection.
+
+                reactor.callLater(5, self.transport.loseConnection)
                 return
 
             # Make sure there is at least one host-process connection waiting
@@ -168,7 +171,8 @@ class RelayServer(BaseProtocol):
                     
                     response = build_msg_data_chelloresponse(False)
                     self.write_message(response)
-# TODO: Wait for a few seconds and drop the connection.
+                    
+                    reactor.callLater(5, self.transport.loseConnection)
                     return
 
                 # Dequeue an unassigned HP connection.
@@ -193,8 +197,13 @@ class RelayServer(BaseProtocol):
                         "process with session-ID (%d)." % 
                         (self.session_no, hp_connection.session_no))
 
-# TODO: Implement deferred so that we can guarantee the response sequence, 
-#       here.
+            # Now, announce the assignment on the command-channel, and respond 
+            # to the client. Note that, although we don't guarantee the order,
+            # the client would first have to receive the message and -then-
+            # send data, whereas the host process may just have to perform a
+            # couple of trivial operations, if any, to prepare a session that
+            # should already be ready to go.
+
             # Emit an assignment message on the command-channel.
             CommandServer.get_command_channel().\
                           announce_assignment(self.session_no)

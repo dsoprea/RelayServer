@@ -121,7 +121,7 @@ class ReadBuffer(object):
         """Clip buffers that the top of our list that have been completely 
         exhausted.
         """
-# TODO: Test this.    
+# TODO: Test this.
         with self.__class__.__locker:
 
             while self.__read_buffer_index > 0:

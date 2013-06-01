@@ -12,11 +12,7 @@ from relay.message_types.hello_pb2 import ClientHelloResponse
 from relay.message_types import build_msg_data_chello
 from relay.endpoint import EndpointBaseProtocol
 
-#from relay.real.real_client import RealClient as EndpointClient
-from relay.real.hv_client import HvClient as EndpointClient
-
-# TODO: Make sure the data going into RealClient goes in serially (so that we 
-#       can guarantee ordering). 
+from relay.config import EndpointClient
 
 
 class Client(EndpointBaseProtocol):
@@ -24,9 +20,10 @@ class Client(EndpointBaseProtocol):
     itself, and then forward all subsequent data to the "RealServer" instance.
     """
     
-    def __init__(self):
+    def __init__(self, factory):
         EndpointBaseProtocol.__init__(self)
         
+        self.__factory = factory
         self.__configured = False
         self.__buffer_cleared = False
         self.__real_client = EndpointClient(self)
@@ -39,8 +36,7 @@ class Client(EndpointBaseProtocol):
         self.write_message(hello)
 
     def connectionLost(self, reason):
-        log.msg("We have been disconnected from the relay-server. The host"
-                "process must've gone away.")
+        log.msg("We have been disconnected from the relay-server.")
 
         self.__real_client.shutdown()
 
@@ -65,7 +61,8 @@ class Client(EndpointBaseProtocol):
                 "Ready to proceed with regular data.")
 
         self.__configured = True
-    
+        self.__factory.resetDelay()
+
         self.__real_client.ready()
     
     def dataReceived(self, data):
@@ -96,7 +93,7 @@ class ClientClientFactory(ReconnectingClientFactory):
 
     def buildProtocol(self, addr):
         log.msg("Connected client.")
-        return Client()
+        return Client(self)
 
 
 def main():
