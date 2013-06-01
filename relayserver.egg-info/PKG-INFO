@@ -1,0 +1,11 @@
+Metadata-Version: 1.0
+Name: relayserver
+Version: 1.0.0
+Summary: A relay-server to defeat NATs, with pools.
+Home-page: https://github.com/dsoprea/RelayServer
+Author: Dustin Oprea
+Author-email: myselfasunder@gmail.com
+License: LGPL
+Description: A service that that acts as a single proxy between many individual clients and many instances of a server. As both the clients and the servers adapters initiate their connections to the relay server, this solution defeats NAT.
+Keywords: relay-server nat network client server
+Platform: UNKNOWN
