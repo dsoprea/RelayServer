@@ -1,6 +1,5 @@
 from random import randrange
 from datetime import datetime
-from twisted.python import log
 
 from relay.real.ireal_client import IRealClient
 

@@ -1,4 +1,3 @@
-from twisted.python import log
 from datetime import datetime
 
 from relay.real.ireal_server import IRealServer

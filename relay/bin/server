@@ -1,4 +1,4 @@
 #!/bin/sh
 
-PYTHONPATH=../.. ../test/host_process.py $@
+PYTHONPATH=../.. ../endpoints/host_process.py $@
 
