@@ -1,7 +1,7 @@
 from struct import unpack
 from threading import Lock
 
-from relay.base_protocol import BaseProtocol
+from relayserver.base_protocol import BaseProtocol
 
 
 class EndpointBaseProtocol(BaseProtocol):

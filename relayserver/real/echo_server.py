@@ -1,4 +1,4 @@
-from relay.real.ireal_server import IRealServer
+from relayserver.real.ireal_server import IRealServer
 
 
 class EchoServer(IRealServer):

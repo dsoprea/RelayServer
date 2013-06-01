@@ -8,11 +8,11 @@ from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.python.log import startLogging
 from twisted.python import log
 
-from relay.message_types.hello_pb2 import ClientHelloResponse
-from relay.message_types import build_msg_data_chello
-from relay.endpoint import EndpointBaseProtocol
+from relayserver.message_types.hello_pb2 import ClientHelloResponse
+from relayserver.message_types import build_msg_data_chello
+from relayserver.endpoint import EndpointBaseProtocol
 
-from relay.config import EndpointClient
+from relayserver.config import EndpointClient
 
 
 class Client(EndpointBaseProtocol):

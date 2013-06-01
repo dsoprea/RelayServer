@@ -118,10 +118,10 @@ The config.py script simply must import the classes that will be used as the
 client and server:
 
   The server class must be imported/aliased as "EndpointServer" and implement
-  the relay.real.ireal_server.IRealServer interface.
+  the relayserver.real.ireal_server.IRealServer interface.
 
   The client class must be imported/aliased as "EndpointClient" and implement
-  the relay.real.ireal_client.IRealClient interface.
+  the relayserver.real.ireal_client.IRealClient interface.
 
 
 Further Details

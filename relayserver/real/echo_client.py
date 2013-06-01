@@ -1,7 +1,7 @@
 from datetime import datetime
 from time import sleep
 
-from relay.real.ireal_client import IRealClient
+from relayserver.real.ireal_client import IRealClient
 
 
 class EchoClient(IRealClient):

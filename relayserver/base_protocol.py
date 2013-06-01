@@ -3,7 +3,7 @@ from google.protobuf.message import DecodeError
 from twisted.internet.protocol import Protocol
 from twisted.python import log
 
-from relay.utility import get_hex_dump
+from relayserver.utility import get_hex_dump
 
 class BaseProtocol(Protocol):
     def write_message(self, message):

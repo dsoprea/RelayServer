@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from relay.real.ireal_server import IRealServer
+from relayserver.real.ireal_server import IRealServer
 
 
 class HvServer(IRealServer):

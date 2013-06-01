@@ -1,5 +1,5 @@
-from relay.message_types.command_pb2 import Command
-from relay.message_types.hello_pb2 import HostProcessHelloResponse, \
+from relayserver.message_types.command_pb2 import Command
+from relayserver.message_types.hello_pb2 import HostProcessHelloResponse, \
                                     ClientHelloResponse, Hello
 
 def build_msg_cmd_connopen(assigned_hp_session):

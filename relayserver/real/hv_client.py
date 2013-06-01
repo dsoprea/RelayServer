@@ -1,7 +1,7 @@
 from random import randrange
 from datetime import datetime
 
-from relay.real.ireal_client import IRealClient
+from relayserver.real.ireal_client import IRealClient
 
 
 class HvClient(IRealClient):

@@ -11,12 +11,12 @@ from twisted.internet import reactor, protocol
 from twisted.python.log import startLogging
 from twisted.python import log
 
-from relay.read_buffer import ReadBuffer
-from relay.message_types.hello_pb2 import Hello
-from relay.message_types import build_msg_cmd_connopen, build_msg_cmd_conndrop,\
+from relayserver.read_buffer import ReadBuffer
+from relayserver.message_types.hello_pb2 import Hello
+from relayserver.message_types import build_msg_cmd_connopen, build_msg_cmd_conndrop,\
                                 build_msg_data_hphelloresponse,\
                                 build_msg_data_chelloresponse
-from relay.base_protocol import BaseProtocol
+from relayserver.base_protocol import BaseProtocol
 
 # TODO: As Twisted mostly runs synchronously, see if there's someway we can 
 #       spin-off write requests so that control can return to the reactor. 

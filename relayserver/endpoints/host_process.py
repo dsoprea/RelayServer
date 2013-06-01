@@ -8,14 +8,14 @@ from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.python.log import startLogging
 from twisted.python import log
 
-from relay.message_types.command_pb2 import Command
-from relay.message_types.hello_pb2 import HostProcessHelloResponse
-from relay.message_types import build_msg_data_hphello
-from relay.base_protocol import BaseProtocol
-from relay.endpoint import EndpointBaseProtocol
-from relay.read_buffer import ReadBuffer
+from relayserver.message_types.command_pb2 import Command
+from relayserver.message_types.hello_pb2 import HostProcessHelloResponse
+from relayserver.message_types import build_msg_data_hphello
+from relayserver.base_protocol import BaseProtocol
+from relayserver.endpoint import EndpointBaseProtocol
+from relayserver.read_buffer import ReadBuffer
 
-from relay.config import EndpointServer
+from relayserver.config import EndpointServer
 
 
 class HostProcess(EndpointBaseProtocol):
